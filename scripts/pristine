@@ -33,6 +33,20 @@ proc mknod {name type maj min} {
     shellcmd "/etc/mknod /dev/$name $type $maj $min"
 }
 
+set quiet 0
+if {[llength $argv] > 0} {
+    if {[lindex $argv 0] == "quiet"} {
+        set quiet 1 
+    } else {
+        puts "usage: pristine [quiet]"
+    }
+}
+
+# Suppress output
+if {$quiet} {
+    log_user 0
+}
+
 spawn pdp11 configs/tapeinst.ini
 
 # Deposit a loader to fetch the boot block from tm0
@@ -82,10 +96,7 @@ mknod rk2 b 0 2
 mknod rrk2 c 9 1
 
 shellcmd "dd if=/dev/mt0 of=/dev/rk1 count=4000 skip=4100"
-shellcmd "/etc/mount /dev/rk1 /usr/source"
 shellcmd "dd if=/dev/mt0 of=/dev/rk2 count=4000 skip=8100"
-shellcmd "mkdir /usr/doc"
-shellcmd "/etc/mount /dev/rk2 /usr/doc"
 
 # Set the system up to mount /usr/src and /usr/doc on boot
 expect "# "
@@ -102,6 +113,10 @@ shellcmd "sync"
 after 100
 simbrk
 simcmd "q"
+
+if {$quiet == 1} {
+    exit 0
+}
 
 puts "\nDone extracting Unix v6.  Start it with:\n"
 puts "pdp11 configs/pristine.ini"

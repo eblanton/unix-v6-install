@@ -8,13 +8,13 @@ all: pristine
 include urls.inc
 
 pristine: dist.tap $(PRISTINEDISKS) scripts/pristine
-	scripts/pristine
+	scripts/pristine quiet
 
 dist.tap: v6.tape tools/enblock
 	tools/enblock < v6.tape > dist.tap
 
 v6.tape:
-	curl -O "$(V6TAPE)"
+	curl -OSs "$(V6TAPE)"
 	gzip -d < v6.tape.gz > v6.tape
 
 tools/enblock: tools/v6enb/enblock.c
@@ -29,13 +29,13 @@ tools/v6enb/enblock.c: v6enb.tar.gz
 	touch $@
 
 v6enb.tar.gz:
-	curl -OL "$(ENBLOCK)"
+	curl -OLSs "$(ENBLOCK)"
 
 %.rk05:
-	dd if=/dev/zero of=$@ bs=1024 count=2436
+	dd if=/dev/zero of=$@ bs=1024 count=2436 2>/dev/null
 
 %.rl02:
-	dd if=/dev/zero of=$@ bs=1024 count=10240
+	dd if=/dev/zero of=$@ bs=1024 count=10240 2>/dev/null
 
 clean:
 	rm -r tools/v6enb tools/enblock dist.tap
