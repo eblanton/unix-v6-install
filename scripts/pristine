@@ -1,0 +1,110 @@
+#!/usr/bin/expect -f
+
+proc simcmd cmd {
+    expect "sim> "
+    send -- "$cmd\n"
+}
+
+proc tapcmd cmd {
+    expect "="
+    send -- "$cmd\n"
+}
+
+proc shellcmd cmd {
+    expect "# "
+    send -- "$cmd\n"
+}
+
+proc tapeblock {doff toff count} {
+    tapcmd "tmrk"
+    expect "disk offset\r"
+    send -- "$doff\n"
+    expect "tape offset\r"
+    send -- "$toff\n"
+    expect "count\r"
+    send -- "$count\n"
+}
+
+proc simbrk {} {
+    send -- "\005"
+}
+
+proc mknod {name type maj min} {
+    shellcmd "/etc/mknod /dev/$name $type $maj $min"
+}
+
+spawn pdp11 configs/tapeinst.ini
+
+# Deposit a loader to fetch the boot block from tm0
+simcmd "d 100000 012700"
+simcmd "d 100002 172526"
+simcmd "d 100004 010040"
+simcmd "d 100006 012740"
+simcmd "d 100010 060003"
+simcmd "d 100012 000777"
+
+# Load the boot block to address 0
+simcmd "go 100000"
+after 100
+simbrk
+
+# Jump to the block we just loaded
+simcmd "go 0"
+after 100
+
+# This is the tape installer
+tapeblock 0 100 1
+tapeblock 1 101 3999
+
+# The root disk is created, boot to it
+expect "="
+simbrk
+simcmd "boot rk0"
+expect "@"
+send -- "rkunix\n"
+
+# Log in
+expect "login: "
+send -- "root\n"
+
+# The v6 install guide has us build and install a kernel at this point,
+# but this will work fine in the simulator with no further changes, so
+# let's make the necessary device nodes and extract /usr/source and
+# /usr/doc.
+
+mknod mt0 b 3 0
+mknod rmt0 c 12 0
+mknod rk0 b 0 0
+mknod rrk0 c 9 0
+mknod rk1 b 0 1
+mknod rrk1 c 9 1
+mknod rk2 b 0 2
+mknod rrk2 c 9 1
+
+shellcmd "dd if=/dev/mt0 of=/dev/rk1 count=4000 skip=4100"
+shellcmd "/etc/mount /dev/rk1 /usr/source"
+shellcmd "dd if=/dev/mt0 of=/dev/rk2 count=4000 skip=8100"
+shellcmd "mkdir /usr/doc"
+shellcmd "/etc/mount /dev/rk2 /usr/doc"
+
+# Set the system up to mount /usr/src and /usr/doc on boot
+expect "# "
+send -- {cat >> /etc/rc
+mount /dev/rk1 /usr/source
+mount /dev/rk2 /usr/doc
+}
+send -- "\004"
+
+# The pristine system is built; shut it down
+shellcmd "sync"
+after 100
+shellcmd "sync"
+after 100
+simbrk
+simcmd "q"
+
+puts "\nDone extracting Unix v6.  Start it with:\n"
+puts "pdp11 configs/pristine.ini"
+puts "simh> boot rk0"
+puts "@rkunix"
+puts "\nLog in as root, no password."
