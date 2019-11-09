@@ -99,10 +99,11 @@ shellcmd "dd if=/dev/mt0 of=/dev/rk1 count=4000 skip=4100"
 shellcmd "dd if=/dev/mt0 of=/dev/rk2 count=4000 skip=8100"
 
 # Set the system up to mount /usr/src and /usr/doc on boot
+shellcmd "mkdir /usr/doc"
 expect "# "
 send -- {cat >> /etc/rc
-mount /dev/rk1 /usr/source
-mount /dev/rk2 /usr/doc
+/etc/mount /dev/rk1 /usr/source
+/etc/mount /dev/rk2 /usr/doc
 }
 send -- "\004"
 
