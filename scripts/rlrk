@@ -1,0 +1,155 @@
+#!/usr/bin/expect -f
+
+proc simcmd cmd {
+    expect "sim> "
+    send -- "$cmd\n"
+}
+
+proc shellcmd cmd {
+    expect "# "
+    send -- "$cmd\n"
+}
+
+# This requires an \n at the end, since it's likely to have embedded \n
+proc edcmd cmd {
+    expect "*"
+    send -- "$cmd\n"
+}
+
+proc simbrk {} {
+    send -- "\005"
+}
+
+proc mknod {name type maj min} {
+    shellcmd "/etc/mknod /dev/$name $type $maj $min"
+}
+
+set quiet 0
+if {[llength $argv] > 0} {
+    if {[lindex $argv 0] == "quiet"} {
+        set quiet 1
+    } else {
+        puts "usage: pristine [quiet]"
+    }
+}
+
+proc putfile {dst src} {
+    shellcmd "cat > $dst"
+    set fd [open $src r]
+    while {[gets $fd line] >= 0} {
+        if {[string range [string trim "$line"] 0 0] == "#"} {
+            continue
+        }
+        send -- "$line\n"
+    }
+    close $fd
+    send -- "\004"
+}
+
+# Suppress output
+if {$quiet} {
+    log_user 0
+}
+
+spawn pdp11 configs/rlrk.ini
+
+simcmd "boot rl0"
+expect "!"
+send -- "unix\n"
+
+shellcmd "stty -lcase"
+
+# Build a kernel with RK support, since the stock kernel doesn't have it
+shellcmd "cd /sys/conf"
+shellcmd "ed c-mlab.c"
+edcmd "6c"
+send -- "\t&nulldev,\t&nulldev,\t&rkstrategy,\t&rktab,\t/*  0     rk */\n.\n"
+edcmd "w"
+edcmd "q"
+shellcmd "ed l-mlab.s"
+edcmd "/^rk/s/0\$/1/"
+edcmd "w"
+edcmd "q"
+shellcmd "make unix-mlab"
+shellcmd "cp unix-mlab /"
+shellcmd "sync"
+after 100
+shellcmd "sync"
+after 100
+simbrk
+
+# At this point a kernel with RK05 support is installed, boot to it and
+# mount the RK05 root so that we can build the RL drivers on the RK
+# image.
+#
+# It's possible we should be using the Shoppa kernel in the long run,
+# that bears further study.
+simcmd "boot rl0"
+expect "!"
+send -- "unix-mlab\n"
+
+shellcmd "stty -lcase"
+# /mnt1 already exists, just use that
+shellcmd "/etc/mount /dev/rk0 /mnt1"
+shellcmd "cp /sys/dmr/rl.c /mnt1/usr/sys/dmr"
+shellcmd "/etc/umount /dev/rk0"
+shellcmd "sync"
+after 100
+shellcmd "sync"
+after 100
+simbrk
+
+# Boot to the RK root, which requires changing our CPU
+simcmd "set cpu 11/34 256k"
+simcmd "boot rk0"
+expect "@"
+send -- "rkunix\n"
+expect "login: "
+send -- "root\n"
+
+# Upload an ed script; this means this program has to be run from the
+# top-level source directory.  Tcl doesn't have real here-docs, or we'd
+# use that.
+putfile "/tmp/rl.ed" "scripts/rl.ed"
+
+# Apply that ed script to rl.c and add rl.o to lib2
+shellcmd "chdir /usr/sys/dmr"
+shellcmd "ed rl.c < /tmp/rl.ed"
+shellcmd "cc -c rl.c"
+shellcmd "ar r ../lib2 rl.o"
+
+shellcmd "chdir ../conf"
+
+# Adjust mkconf.c to understand RL drives
+putfile "/tmp/mkconf.ed" "scripts/mkconf.ed"
+shellcmd "ed mkconf.c < /tmp/mkconf.ed"
+shellcmd "cc mkconf.c"
+shellcmd "mv a.out mkconf"
+
+# Create and compile a configuration, then link the kernel
+shellcmd "mkconf"
+send -- "rk\nrl\ndone\n"
+shellcmd "cc -c c.c"
+shellcmd "as l.s"
+shellcmd "mv a.out l.o"
+shellcmd "as m40.s"
+shellcmd "mv a.out m40.o"
+shellcmd "ld -x l.o m40.o c.o ../lib1 ../lib2"
+
+# Done!  This image can now read both RK and RL drives, and boots to RK.
+# Move the kernel into place and create the RL0 device nodes.
+shellcmd "mv a.out /rlrkunix"
+mknod rl0 b 8 0
+mknod rrl0 c 16 0
+
+shellcmd "sync"
+after 100
+shellcmd "sync"
+after 100
+simbrk
+
+simcmd q
+
+if {$quiet} {
+    exit 0
+}

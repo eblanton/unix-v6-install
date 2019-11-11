@@ -1,0 +1,32 @@
+# Ports the Shoppa rl.c to the v6 rk distribution compiler
+1,6d
+/NODRIVE/s/(-1)/-1/
+50d
+65s/ =//
+67s/unsigned/int/
+68c
+	int rl_known;		/* known position */
+.
+72s/register //
+105s/register unsigned/int/
+106c
+	int newcyl, new, diff, bc;
+	register int b;
+.
+110s/unsigned/int/
+123s%/=%=/%
+147s/ioct(bp)/bp->av_back/
+165i
+	register int status;
+        char *a;
+        register char *cast;
+.
+175d
+201d
+# Credit to Grant Iraci for finding this cast hack
+199s/ioct(bp)/(cast = bp->av_back)/
+202s/ioct(bp)/(cast = bp->av_back)/
+204s/ioct(bp)/(cast = bp->av_back)/
+218s/register //
+w
+q

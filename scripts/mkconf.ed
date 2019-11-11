@@ -1,0 +1,24 @@
+# Adds RL drive support to mkconf
+17i
+        "rl",
+.
+38i
+        "rl",
+.
+103s/150-174/150-154/
+106i
+	"rl",
+	0,	160,	BLOCK+CHAR+INTR,
+	"\trlio; br5\n",
+	".globl\t_rlintr\n",
+	"rlio:\tjsr\tr0,call; _rlintr\n",
+	"\t&nulldev,\t&nulldev,\t&rlstrategy,\t&rltab,",
+	"\t&nulldev,  &nulldev,  &rlread,   &rlwrite,  &nodev,",
+
+/*
+ * 164-174 unused
+ */
+.
+w
+q
+
