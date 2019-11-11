@@ -38,7 +38,7 @@ if {[llength $argv] > 0} {
     if {[lindex $argv 0] == "quiet"} {
         set quiet 1 
     } else {
-        puts "usage: pristine [quiet]"
+        puts "usage: pristine-rk [quiet]"
     }
 }
 
@@ -120,7 +120,7 @@ if {$quiet == 1} {
 }
 
 puts "\nDone extracting Unix v6.  Start it with:\n"
-puts "pdp11 configs/pristine.ini"
+puts "pdp11 configs/pristine-rk.ini"
 puts "simh> boot rk0"
 puts "@rkunix"
 puts "\nLog in as root, no password."

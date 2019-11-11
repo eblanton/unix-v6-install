@@ -1,21 +1,21 @@
 CC = gcc
 CFLAGS = -std=c89
 
-PRISTINEDISKS = images/pristine_root.rk05 images/pristine_src.rk05 images/pristine_doc.rk05
+PRISTINERKDISKS = images/pristine_root.rk05 images/pristine_src.rk05 images/pristine_doc.rk05
 
 all: rlrk
 
 include urls.inc
 
-pristine: pristine.stamp
+pristine-rk: pristine-rk.stamp
 
-pristine.stamp: dist.tap $(PRISTINEDISKS) scripts/pristine configs/pristine.ini
-	scripts/pristine quiet && touch pristine.stamp
+pristine-rk.stamp: dist.tap $(PRISTINERKDISKS) scripts/pristine-rk configs/pristine-rk.ini
+	scripts/pristine-rk quiet && touch $@
 
 rlrk: rlrk.stamp
 
 rlrk.stamp: images/rlrk_root.rk05 images/shoppa_unix_v6.rl02 configs/rlrk.ini
-	scripts/rlrk quiet && touch rlrk.stamp
+	scripts/rlrk quiet && touch $@
 
 dist.tap: v6.tape tools/enblock
 	tools/enblock < v6.tape > dist.tap
@@ -44,7 +44,7 @@ images/shoppa_unix_v6.rl02: unix_v6.rl02.gz
 unix_v6.rl02.gz:
 	curl -OSs "$(SHOPPA)"
 
-images/rlrk_root.rk05: pristine.stamp
+images/rlrk_root.rk05: pristine-rk.stamp
 	cp images/pristine_root.rk05 images/rlrk_root.rk05
 
 %.rk05:
@@ -58,10 +58,10 @@ clean:
 	rm -rf tools/v6enb
 
 realclean: clean
-	rm -f $(PRISTINEDISKS) images/rlrk_root.rk05 images/shoppa_unix_v6.rl02
+	rm -f $(PRISTINERKDISKS) images/rlrk_root.rk05 images/shoppa_unix_v6.rl02
 
-.PHONY: all pristine rlrk clean
+.PHONY: all pristine-rk rlrk clean
 
 .PRECIOUS: dist.tap v6.tape.gz v6enb.tar.gz tools/enblock
 .PRECIOUS: unix_v6.rl02.gz
-.PRECIOUS: $(PRISTINEDISKS) images/rlrk_root.rk05
+.PRECIOUS: $(PRISTINERKDISKS) images/rlrk_root.rk05
