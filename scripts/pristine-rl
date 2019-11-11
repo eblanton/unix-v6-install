@@ -1,0 +1,125 @@
+#!/usr/bin/expect -f
+
+proc simcmd cmd {
+    expect "sim> " {send -- "$cmd\n"}
+}
+
+proc shellcmd cmd {
+    expect "# " {send -- "$cmd\n"}
+}
+
+proc simbrk {} {
+    send -- "\005"
+}
+
+proc mknod {name type maj min} {
+    shellcmd "/etc/mknod /dev/$name $type $maj $min"
+}
+
+set quiet 0
+if {[llength $argv] > 0} {
+    if {[lindex $argv 0] == "quiet"} {
+        set quiet 1
+    } else {
+        puts "usage: pristine [quiet]"
+    }
+}
+
+# Suppress output
+if {$quiet} {
+    log_user 0
+}
+
+spawn pdp11 configs/pristine-rl.ini
+
+simcmd "boot rk0"
+expect "@"
+send -- "rlrkunix\n"
+
+expect "login: "
+send -- "root\n"
+
+# Extract the distribution tape onto a new RK05 image
+shellcmd "dd if=/dev/mt0 of=/dev/rk1 count=4000 skip=100"
+shellcmd "sync"
+after 100
+shellcmd ""
+
+# Dismount the distribution tape and mount a dump tape
+simbrk
+simcmd "detach tm0"
+simcmd "attach tm0 images/distroot_dump.tap"
+simcmd cont
+
+# Run a sync, and simultaneously force a prompt for the dump
+after 100
+send -- "\n"
+
+# Dump the pristine filesystem
+shellcmd "dump 0 /dev/rk1"
+
+# Create the RL02 disk to receive it and restore
+shellcmd "/etc/mkfs /dev/rl0 10200"
+shellcmd "sync"
+after 100
+shellcmd "restor r /dev/rl0"
+# restor seems to require a newline to finish (?)
+after 250
+send -- "\n"
+
+# Copy the boot block from the Shoppa image
+mknod rl1 b 8 1
+shellcmd "dd if=/dev/rl1 of=/dev/rl0 bs=512 count=1"
+shellcmd "sync"
+after 100
+
+# Mount the newly restored disk
+shellcmd "/etc/mount /dev/rl0 /mnt"
+
+# Copy the necessary kernel sources into place
+shellcmd "cp /usr/sys/dmr/rl.c /mnt/usr/sys/dmr"
+shellcmd "cp /usr/sys/conf/mkconf.c /mnt/usr/sys/conf"
+
+# Build an RL kernel
+shellcmd "chdir /mnt/usr/sys/dmr"
+shellcmd "cc -c rl.c"
+shellcmd "ar r ../lib2 rl.o"
+shellcmd "chdir ../conf"
+shellcmd "cc mkconf.c"
+shellcmd "mv a.out mkconf"
+shellcmd "mkconf"
+send -- "rl\ndone\n"
+shellcmd "cc -c c.c"
+shellcmd "as l.s"
+shellcmd "mv a.out l.o"
+shellcmd "as m40.s"
+shellcmd "mv a.out m40.o"
+shellcmd "ld -x l.o m40.o c.o ../lib1 ../lib2"
+shellcmd "mv a.out /mnt/rlunix"
+
+# Create device nodes
+shellcmd "cd /mnt/dev"
+shellcmd "/etc/mknod rl0 b 8 0"
+shellcmd "/etc/mknod rl1 b 8 1"
+shellcmd "/etc/mknod rl2 b 8 2"
+shellcmd "/etc/mknod rl3 b 8 3"
+
+# Sync and unmount rl0
+shellcmd "chdir /"
+shellcmd sync
+after 100
+shellcmd "/etc/umount /dev/rl0"
+
+# Sync and shutdown
+shellcmd "sync"
+after 100
+shellcmd "sync"
+after 100
+simbrk
+simcmd q
+
+if {$quiet} {
+    exit 0
+}
+
+puts ""

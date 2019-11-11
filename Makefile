@@ -3,7 +3,7 @@ CFLAGS = -std=c89
 
 PRISTINERKDISKS = images/pristine_root.rk05 images/pristine_src.rk05 images/pristine_doc.rk05
 
-all: rlrk
+all: pristine-rl
 
 include urls.inc
 
@@ -16,6 +16,14 @@ rlrk: rlrk.stamp
 
 rlrk.stamp: images/rlrk_root.rk05 images/shoppa_unix_v6.rl02 configs/rlrk.ini
 	scripts/rlrk quiet && touch $@
+
+pristine-rl: pristine-rl.stamp
+
+pristine-rl.stamp: rlrk.stamp dist.tap
+pristine-rl.stamp: images/rlinst_root.rk05 images/pristine_root.rl02
+pristine-rl.stamp: configs/pristine-rl.ini
+	rm -f images/distroot_dump.tap
+	scripts/pristine-rl quiet && touch $@
 
 dist.tap: v6.tape tools/enblock
 	tools/enblock < v6.tape > dist.tap
@@ -59,9 +67,12 @@ clean:
 
 realclean: clean
 	rm -f $(PRISTINERKDISKS) images/rlrk_root.rk05 images/shoppa_unix_v6.rl02
+	rm -f images/distroot_dump.tap images/pristine_root.rl02
+	rm -f images/rlinst_root.rk05
 
 .PHONY: all pristine-rk rlrk clean
 
 .PRECIOUS: dist.tap v6.tape.gz v6enb.tar.gz tools/enblock
 .PRECIOUS: unix_v6.rl02.gz
 .PRECIOUS: $(PRISTINERKDISKS) images/rlrk_root.rk05
+.PRECIOUS: images/pristine_root.rl02
