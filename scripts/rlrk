@@ -128,7 +128,7 @@ shellcmd "mv a.out mkconf"
 
 # Create and compile a configuration, then link the kernel
 shellcmd "mkconf"
-send -- "rk\nrl\ndone\n"
+send -- "rk\nrl\ntm\ndone\n"
 shellcmd "cc -c c.c"
 shellcmd "as l.s"
 shellcmd "mv a.out l.o"
