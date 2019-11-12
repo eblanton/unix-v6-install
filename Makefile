@@ -19,8 +19,8 @@ rlrk.stamp: images/rlrk_root.rk05 images/shoppa_unix_v6.rl02 configs/rlrk.ini
 
 pristine-rl: pristine-rl.stamp
 
-pristine-rl.stamp: rlrk.stamp dist.tap
-pristine-rl.stamp: images/rlinst_root.rk05 images/pristine_root.rl02
+pristine-rl.stamp: rlrk.stamp dist.tap images/rlinst_root.rk05
+pristine-rl.stamp: images/rlinst_scratch.rk05 images/pristine_root.rl02
 pristine-rl.stamp: configs/pristine-rl.ini
 	rm -f images/distroot_dump.tap
 	scripts/pristine-rl quiet && touch $@
@@ -54,6 +54,9 @@ unix_v6.rl02.gz:
 
 images/rlrk_root.rk05: pristine-rk.stamp
 	cp images/pristine_root.rk05 images/rlrk_root.rk05
+
+images/rlinst_root.rk05: rlrk.stamp
+	cp images/rlrk_root.rk05 $@
 
 %.rk05:
 	dd if=/dev/zero of=$@ bs=1024 count=2436 2>/dev/null
