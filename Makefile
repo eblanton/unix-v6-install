@@ -20,7 +20,7 @@ rlrk.stamp: images/rlrk_root.rk05 images/shoppa_unix_v6.rl02 configs/rlrk.ini
 pristine-rl: pristine-rl.stamp
 
 pristine-rl.stamp: rlrk.stamp dist.tap images/rlinst_root.rk05
-pristine-rl.stamp: images/rlinst_scratch.rk05 images/pristine_root.rl02
+pristine-rl.stamp: images/rlinst_scratch.rk05 images/pristine_root.rl01
 pristine-rl.stamp: configs/pristine-rl.ini
 	rm -f images/distroot_dump.tap
 	scripts/pristine-rl quiet && touch $@
@@ -61,16 +61,18 @@ images/rlinst_root.rk05: rlrk.stamp
 %.rk05:
 	dd if=/dev/zero of=$@ bs=1024 count=2436 2>/dev/null
 
+%.rl01:
+	dd if=/dev/zero of=$@ bs=1024 count=5120 2>/dev/null
+
 %.rl02:
 	dd if=/dev/zero of=$@ bs=1024 count=10240 2>/dev/null
-
 clean:
 	rm -f tools/enblock dist.tap *.stamp
 	rm -rf tools/v6enb
 
 realclean: clean
 	rm -f $(PRISTINERKDISKS) images/rlrk_root.rk05 images/shoppa_unix_v6.rl02
-	rm -f images/distroot_dump.tap images/pristine_root.rl02
+	rm -f images/distroot_dump.tap images/pristine_root.rl01
 	rm -f images/rlinst_root.rk05
 
 .PHONY: all pristine-rk rlrk clean
@@ -78,4 +80,4 @@ realclean: clean
 .PRECIOUS: dist.tap v6.tape.gz v6enb.tar.gz tools/enblock
 .PRECIOUS: unix_v6.rl02.gz
 .PRECIOUS: $(PRISTINERKDISKS) images/rlrk_root.rk05
-.PRECIOUS: images/pristine_root.rl02
+.PRECIOUS: images/pristine_root.rl01

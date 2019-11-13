@@ -59,7 +59,7 @@ send -- "\n"
 shellcmd "dump 0 /dev/rk1"
 
 # Create the RL02 disk to receive it and restore
-shellcmd "/etc/mkfs /dev/rl0 10200"
+shellcmd "/etc/mkfs /dev/rl0 9348"
 shellcmd "sync"
 after 100
 shellcmd "restor r /dev/rl0"
@@ -89,6 +89,9 @@ shellcmd "cc mkconf.c"
 shellcmd "mv a.out mkconf"
 shellcmd "mkconf"
 send -- "rl\ndone\n"
+# Set up for swap
+shellcmd "ed c.c"
+send -- "/swplo/s/4000/9348/\nw\nq\n"
 shellcmd "cc -c c.c"
 shellcmd "as l.s"
 shellcmd "mv a.out l.o"
@@ -98,7 +101,7 @@ shellcmd "ld -x l.o m40.o c.o ../lib1 ../lib2"
 shellcmd "mv a.out /mnt/rlunix"
 
 # Create device nodes
-shellcmd "cd /mnt/dev"
+shellcmd "chdir /mnt/dev"
 shellcmd "/etc/mknod rl0 b 8 0"
 shellcmd "/etc/mknod rl1 b 8 1"
 shellcmd "/etc/mknod rl2 b 8 2"
