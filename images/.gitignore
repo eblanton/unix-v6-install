@@ -1,5 +1,4 @@
 *.rk05
 *.rl01
 *.rl02
-
-distroot_dump.tap
+*.tap
