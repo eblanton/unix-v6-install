@@ -17,6 +17,15 @@ In order to build this repository, you will need:
  * curl
  * expect
 
+Notes and Lessons Learned
+---
+
+The `doc/` subdirectory of this repository contains some notes on the
+porting process and lessons that I have learned during porting.  Some
+of this is well-documented elsewhere, but some of it appears to be
+lore that perhaps remains only in the minds of Unix hackers from a
+bygone era or digital archaeologists like myself.
+
 Pristine-RK
 ---
 
